@@ -9,8 +9,9 @@ const port = parseInt(process.env.PORT || '3000');
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+    app.useStaticAssets(resolve('./public'));
     app.setViewEngine('pug');
-    app.setBaseViewsDir(resolve('./views/pages'));
+    app.setBaseViewsDir(resolve('./view/pages'));
     app.disable('x-powered-by');
     await app.listen(port);
 

@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Render } from '@nestjs/common';
 
 import { AppService } from './app.service';
 
@@ -7,7 +7,18 @@ export class AppController {
     constructor(private readonly appService: AppService) {}
 
     @Get()
-    getHello(): string {
-        return this.appService.getHello();
+    @Render('home')
+    home() {
+        return {
+            title: 'Chess AI',
+        };
+    }
+
+    @Get('game')
+    @Render('game')
+    game() {
+        return {
+            title: 'Game | Chess AI',
+        };
     }
 }

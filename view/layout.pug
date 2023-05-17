@@ -1,9 +1,9 @@
 doctype html
-html(lang='pl')
+html
     head
         include includes/meta.pug
         link(rel='stylesheet' href='/styles/style.css')
     body
         main
             block content
-        script(defer src='/scripts/script.js')
+        script(defer type='module' src='/scripts/script.js')
