@@ -18,7 +18,7 @@ export class Game {
         return this.getState();
     }
 
-    private getState(): GameState {
+    getState(): GameState {
         const status = this.client.getStatus();
 
         return {
