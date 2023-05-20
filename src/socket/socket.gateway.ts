@@ -8,10 +8,10 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-import { genRandomString } from '../helpers/hash.js';
-import { IDuel, IResponse } from './socket.types.js';
+import { genRandomString } from '../helpers/string.js';
+import { IDuel, IDuelState, IResponse } from './socket.types.js';
+import { ESide } from '../game/game.types.js';
 import { Game } from '../game/game.class.js';
-import { GameState } from '../game/game.types.js';
 
 @WebSocketGateway({
     cors: {
@@ -19,49 +19,91 @@ import { GameState } from '../game/game.types.js';
     },
 })
 export class SocketGateway implements OnGatewayDisconnect {
+    private readonly duels: { [roomId: string]: IDuel } = {};
+
     @WebSocketServer()
     private readonly server: Server;
 
-    private readonly duels: { [roomId: string]: IDuel<Game> } = {};
-
     @SubscribeMessage('create')
-    create(@ConnectedSocket() socket: Socket, @MessageBody() ai: boolean): IResponse<GameState> {
+    create(@ConnectedSocket() socket: Socket, @MessageBody() body: { name: string; ai: boolean }): IResponse {
         const roomId = genRandomString(10);
-
-        this.duels[roomId] = {
+        const duel = (this.duels[roomId] = {
             host: {
+                name: body.name,
                 socketId: socket.id,
-                white: true,
+                side: ESide.WHITE,
                 turn: true,
             },
             guest: {
-                white: false,
+                name: body.ai ? 'AI' : undefined,
+                side: ESide.BLACK,
                 turn: false,
             },
-            ai,
+            ai: body.ai,
             game: new Game(),
-        };
+        });
 
-        const state = this.duels[roomId].game.reset();
+        duel.game.reset();
 
         return {
             status: 'success',
             roomId,
-            state,
+            state: this.getDuelState(duel),
+        };
+    }
+
+    @SubscribeMessage('reset')
+    reset(@ConnectedSocket() socket: Socket, @MessageBody() body: { side: ESide }): IResponse {
+        const roomId = this.findRoomId(socket);
+
+        if (!roomId) {
+            return {
+                status: 'error',
+                reason: 'NOT_FOUND',
+                display: 'Duel not found!',
+            };
+        }
+
+        const duel = this.duels[roomId];
+
+        if (duel.host.socketId !== socket.id) {
+            return {
+                status: 'error',
+                reason: 'FORBIDDEN',
+                display: 'Only host can reset!',
+            };
+        }
+
+        duel.game.reset();
+
+        duel.host.side = body.side;
+        duel.guest.side = body.side === ESide.WHITE ? ESide.BLACK : ESide.WHITE;
+        duel.host.turn = body.side === ESide.WHITE;
+        duel.guest.turn = !duel.host.turn;
+        duel.startedAt = duel.guest.socketId ? new Date() : undefined;
+        duel.endedAt = undefined;
+
+        this.server.to(roomId).emit('state', this.getDuelState(duel));
+
+        return {
+            status: 'success',
         };
     }
 
     @SubscribeMessage('join')
-    join(@ConnectedSocket() socket: Socket, @MessageBody() roomId: string): IResponse<GameState> {
-        if (!this.duels[roomId]) {
+    join(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomId: string }): IResponse {
+        const { roomId } = body;
+        const duel = this.duels[roomId];
+
+        if (!duel) {
             return {
                 status: 'error',
-                reason: 'ROOM_NOT_FOUND',
-                display: 'Incorrect room ID!',
+                reason: 'NOT_FOUND',
+                display: 'Duel not found!',
             };
         }
 
-        if (this.duels[roomId].ai) {
+        if (duel.ai) {
             return {
                 status: 'error',
                 reason: 'DUEL_WITH_AI',
@@ -69,15 +111,15 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        if (this.duels[roomId].host.socketId === socket.id) {
+        if (duel.host.socketId === socket.id) {
             return {
                 status: 'error',
                 reason: 'YOU_ALREADY_JOINED',
-                display: 'You already joined!',
+                display: 'You have already joined!',
             };
         }
 
-        if (this.duels[roomId].guest.socketId) {
+        if (duel.guest.socketId && duel.guest.socketId !== socket.id) {
             return {
                 status: 'error',
                 reason: 'SOMEONE_ALREADY_JOINED',
@@ -85,20 +127,21 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        this.duels[roomId].host.socketId = socket.id;
+        duel.guest.socketId = socket.id;
 
-        const state = this.duels[roomId].game.getState();
+        if (!duel.startedAt) {
+            duel.startedAt = new Date();
+        }
 
-        socket.to(roomId).emit('state', state);
+        this.server.to(roomId).emit('state', this.getDuelState(duel));
 
         return {
             status: 'success',
-            roomId,
         };
     }
 
     @SubscribeMessage('move')
-    move(@ConnectedSocket() socket: Socket, @MessageBody() move: string): IResponse<GameState> {
+    move(@ConnectedSocket() socket: Socket, @MessageBody() body: { move: string }): IResponse {
         const roomId = this.findRoomId(socket);
 
         if (!roomId) {
@@ -109,9 +152,19 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
+        const duel = this.duels[roomId];
+
+        if (duel.endedAt) {
+            return {
+                status: 'error',
+                reason: 'GAME_HAS_ENDED',
+                display: 'Game has ended!',
+            };
+        }
+
         if (
-            (this.duels[roomId].host.socketId === socket.id && !this.duels[roomId].host.turn) ||
-            (this.duels[roomId].guest.socketId === socket.id && !this.duels[roomId].guest.turn)
+            (duel.host.socketId === socket.id && !duel.host.turn) ||
+            (duel.guest.socketId === socket.id && !duel.guest.turn)
         ) {
             return {
                 status: 'error',
@@ -120,41 +173,19 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        const state = this.duels[roomId].game.move(move);
+        duel.game.move(body.move);
 
-        this.duels[roomId].host.turn = !this.duels[roomId].host.turn;
-        this.duels[roomId].guest.turn = !this.duels[roomId].guest.turn;
+        duel.host.turn = !duel.host.turn;
+        duel.guest.turn = !duel.guest.turn;
 
-        socket.to(roomId).emit('state', state);
-
-        return {
-            status: 'success',
-            roomId,
-        };
-    }
-
-    @SubscribeMessage('reset')
-    reset(@ConnectedSocket() socket: Socket, @MessageBody() white: boolean): IResponse<GameState> {
-        const roomId = this.findRoomId(socket);
-
-        if (!roomId) {
-            return {
-                status: 'error',
-                reason: 'DUEL_NOT_FOUND',
-                display: 'Duel not found!',
-            };
+        if (duel.game.getGameState().isCheckMate) {
+            duel.endedAt = new Date();
         }
 
-        this.duels[roomId].host.white = white;
-        this.duels[roomId].guest.white = !white;
-
-        const state = this.duels[roomId].game.reset();
-
-        socket.to(roomId).emit('state', state);
+        this.server.to(roomId).emit('state', this.getDuelState(duel));
 
         return {
             status: 'success',
-            roomId,
         };
     }
 
@@ -166,7 +197,8 @@ export class SocketGateway implements OnGatewayDisconnect {
         }
 
         if (this.duels[roomId].host.socketId === socket.id) {
-            socket.to(roomId).emit('leave');
+            this.server.to(roomId).emit('leave');
+
             delete this.duels[roomId];
         } else {
             this.duels[roomId].guest.socketId = undefined;
@@ -181,5 +213,16 @@ export class SocketGateway implements OnGatewayDisconnect {
             (roomId) =>
                 this.duels[roomId]?.host.socketId === socket.id || this.duels[roomId]?.guest.socketId === socket.id,
         );
+    }
+
+    private getDuelState(duel: IDuel): IDuelState {
+        return {
+            host: duel.host,
+            guest: duel.guest,
+            ai: duel.ai,
+            startedAt: duel.startedAt,
+            endedAt: duel.endedAt,
+            gameState: duel.game.getGameState(),
+        };
     }
 }

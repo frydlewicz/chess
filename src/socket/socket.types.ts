@@ -1,22 +1,35 @@
+import { ESide, IGameState } from '../game/game.types.js';
+import { Game } from '../game/game.class.js';
+
 export interface IPlayer {
+    name?: string;
     socketId?: string;
-    white: boolean;
+    side: ESide;
     turn: boolean;
 }
 
-export interface IDuel<GameType> {
+export interface IDuel {
     host: IPlayer;
     guest: IPlayer;
     ai: boolean;
-    game: GameType;
+    game: Game;
     startedAt?: Date;
     endedAt?: Date;
 }
 
-export interface ICorrectResponse<GameStateType> {
+export interface IDuelState {
+    host: IPlayer;
+    guest: IPlayer;
+    ai: boolean;
+    startedAt?: Date;
+    endedAt?: Date;
+    gameState: IGameState;
+}
+
+export interface ICorrectResponse {
     status: 'success';
-    roomId: string;
-    state?: GameStateType;
+    roomId?: string;
+    state?: IDuelState;
 }
 
 export interface IErrorResponse {
@@ -25,4 +38,4 @@ export interface IErrorResponse {
     display: string;
 }
 
-export type IResponse<GameStateType> = ICorrectResponse<GameStateType> | IErrorResponse;
+export type IResponse = ICorrectResponse | IErrorResponse;

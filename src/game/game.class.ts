@@ -1,28 +1,36 @@
 import { AlgebraicGameClient } from 'chess';
 import chess from 'chess/src/main.js';
 
-import { GameState } from './game.types.js';
+import { ESide, IGameState, ISquare } from './game.types.js';
 
 export class Game {
     private client: AlgebraicGameClient;
 
-    reset(): GameState {
+    reset(): void {
         this.client = chess.create({ PGN: true });
-
-        return this.getState();
     }
 
-    move(notation: string): GameState {
+    move(notation: string): void {
         this.client.move(notation);
-
-        return this.getState();
     }
 
-    getState(): GameState {
+    getGameState(): IGameState {
         const status = this.client.getStatus();
 
         return {
-            squares: status.board.squares,
+            squares: status.board.squares.map(
+                (square) =>
+                    ({
+                        col: square.file,
+                        row: square.rank,
+                        piece: square.piece
+                            ? {
+                                  type: square.piece.notation,
+                                  side: square.piece.side?.name !== 'white' ? ESide.BLACK : ESide.WHITE,
+                              }
+                            : undefined,
+                    } as ISquare),
+            ),
             isCheck: status.isCheck,
             isCheckMate: status.isCheckMate,
             isRepetition: status.isRepetition,
