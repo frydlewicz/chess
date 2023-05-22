@@ -19,10 +19,26 @@ import { Game } from '../game/game.class.js';
     },
 })
 export class SocketGateway implements OnGatewayDisconnect {
+    public static readonly GarbageCollectorInterval = 1000 * 60 * 60;
+    public static readonly MaxDuelLifetime = 1000 * 60 * 60 * 12;
     private readonly duels: { [roomId: string]: IDuel } = {};
 
     @WebSocketServer()
     private readonly server: Server;
+
+    constructor() {
+        setInterval(() => {
+            const past = Date.now() - SocketGateway.MaxDuelLifetime;
+
+            for (const roomId in this.duels) {
+                if (this.duels[roomId]?.startedAt && this.duels[roomId].startedAt.getTime() < past) {
+                    this.server.to(roomId).emit('leave');
+
+                    delete this.duels[roomId];
+                }
+            }
+        }, SocketGateway.GarbageCollectorInterval);
+    }
 
     @SubscribeMessage('create')
     create(@ConnectedSocket() socket: Socket, @MessageBody() body: { name: string; ai: boolean }): IResponse {
