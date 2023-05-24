@@ -21,15 +21,14 @@ export interface IDuelState {
     host: IPlayer;
     guest: IPlayer;
     ai: boolean;
-    startedAt?: Date;
-    endedAt?: Date;
-    gameState: IGameState;
+    startedAt: Date;
+    endedAt: Date;
+    gameState?: IGameState;
 }
 
 export interface ICorrectResponse {
     status: 'success';
     roomId?: string;
-    state?: IDuelState;
 }
 
 export interface IErrorResponse {

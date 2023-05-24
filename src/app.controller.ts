@@ -4,7 +4,7 @@ import { AppService } from './app.service.js';
 
 @Controller()
 export class AppController {
-    constructor(private readonly appService: AppService) {}
+    constructor(private readonly appService: AppService) { }
 
     @Get()
     @Render('home')
@@ -14,9 +14,41 @@ export class AppController {
         };
     }
 
-    @Get('game')
+    @Get('game/ai')
     @Render('game')
-    game() {
+    createGameWithAI() {
+        return {
+            title: 'Game | Chess AI',
+        };
+    }
+
+    @Get('game/ai/:hash')
+    @Render('game')
+    joinGameWithAi() {
+        return {
+            title: 'Game | Chess AI',
+        };
+    }
+
+    @Get('game/host')
+    @Render('game')
+    createGame() {
+        return {
+            title: 'Game | Chess AI',
+        };
+    }
+
+    @Get('game/host/:hash')
+    @Render('game')
+    joinGameAsHost() {
+        return {
+            title: 'Game | Chess AI',
+        };
+    }
+
+    @Get('game/host/:hash')
+    @Render('game')
+    joinGameAsGuest() {
         return {
             title: 'Game | Chess AI',
         };

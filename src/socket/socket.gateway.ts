@@ -41,21 +41,21 @@ export class SocketGateway implements OnGatewayDisconnect {
     }
 
     @SubscribeMessage('create')
-    create(@ConnectedSocket() socket: Socket, @MessageBody() body: { name: string; ai: boolean }): IResponse {
+    create(@MessageBody() body: { ai: boolean }): IResponse {
         const roomId = genRandomString(10);
+        const { ai } = body;
+
         const duel = (this.duels[roomId] = {
             host: {
-                name: body.name,
-                socketId: socket.id,
                 side: ESide.WHITE,
                 turn: true,
             },
             guest: {
-                name: body.ai ? 'AI' : undefined,
+                name: ai ? 'AI' : undefined,
                 side: ESide.BLACK,
                 turn: false,
             },
-            ai: body.ai,
+            ai,
             game: new Game(),
         });
 
@@ -64,7 +64,6 @@ export class SocketGateway implements OnGatewayDisconnect {
         return {
             status: 'success',
             roomId,
-            state: this.getDuelState(duel),
         };
     }
 
@@ -90,16 +89,18 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
+        const { side } = body;
+
         duel.game.reset();
 
-        duel.host.side = body.side;
-        duel.guest.side = body.side === ESide.WHITE ? ESide.BLACK : ESide.WHITE;
-        duel.host.turn = body.side === ESide.WHITE;
+        duel.host.side = side;
+        duel.guest.side = side === ESide.WHITE ? ESide.BLACK : ESide.WHITE;
+        duel.host.turn = side === ESide.WHITE;
         duel.guest.turn = !duel.host.turn;
         duel.startedAt = duel.guest.socketId ? new Date() : undefined;
         duel.endedAt = undefined;
 
-        this.server.to(roomId).emit('state', this.getDuelState(duel));
+        this.server.to(roomId).emit('reset', this.getDuelState(duel, true));
 
         return {
             status: 'success',
@@ -107,8 +108,8 @@ export class SocketGateway implements OnGatewayDisconnect {
     }
 
     @SubscribeMessage('join')
-    join(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomId: string }): IResponse {
-        const { roomId } = body;
+    join(@ConnectedSocket() socket: Socket, @MessageBody() body: { host: boolean, roomId: string, name: string }): IResponse {
+        const { host, roomId, name } = body;
         const duel = this.duels[roomId];
 
         if (!duel) {
@@ -119,7 +120,7 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        if (duel.ai) {
+        if (!host && duel.ai) {
             return {
                 status: 'error',
                 reason: 'DUEL_WITH_AI',
@@ -127,15 +128,8 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        if (duel.host.socketId === socket.id) {
-            return {
-                status: 'error',
-                reason: 'YOU_ALREADY_JOINED',
-                display: 'You have already joined!',
-            };
-        }
-
-        if (duel.guest.socketId && duel.guest.socketId !== socket.id) {
+        if (host && duel.host.socketId && duel.host.socketId !== socket.id ||
+            !host && duel.guest.socketId && duel.guest.socketId !== socket.id) {
             return {
                 status: 'error',
                 reason: 'SOMEONE_ALREADY_JOINED',
@@ -143,13 +137,19 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        duel.guest.socketId = socket.id;
+        if (host) {
+            duel.host.socketId = socket.id;
+            duel.host.name = name;
+        } else {
+            duel.guest.socketId = socket.id;
+            duel.guest.name = name;
+        }
 
-        if (!duel.startedAt) {
+        if (duel.host.socketId && duel.guest.socketId && !duel.startedAt) {
             duel.startedAt = new Date();
         }
 
-        this.server.to(roomId).emit('state', this.getDuelState(duel));
+        this.server.to(roomId).emit('join', this.getDuelState(duel));
 
         return {
             status: 'success',
@@ -169,6 +169,7 @@ export class SocketGateway implements OnGatewayDisconnect {
         }
 
         const duel = this.duels[roomId];
+        const host = duel.host.socketId === socket.id;
 
         if (duel.endedAt) {
             return {
@@ -179,8 +180,8 @@ export class SocketGateway implements OnGatewayDisconnect {
         }
 
         if (
-            (duel.host.socketId === socket.id && !duel.host.turn) ||
-            (duel.guest.socketId === socket.id && !duel.guest.turn)
+            (host && !duel.host.turn) ||
+            (!host && !duel.guest.turn)
         ) {
             return {
                 status: 'error',
@@ -189,7 +190,9 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        duel.game.move(body.move);
+        const { move } = body;
+
+        duel.game.move(move);
 
         duel.host.turn = !duel.host.turn;
         duel.guest.turn = !duel.guest.turn;
@@ -198,7 +201,7 @@ export class SocketGateway implements OnGatewayDisconnect {
             duel.endedAt = new Date();
         }
 
-        this.server.to(roomId).emit('state', this.getDuelState(duel));
+        this.server.to(roomId).emit('move', { host, move });
 
         return {
             status: 'success',
@@ -212,12 +215,12 @@ export class SocketGateway implements OnGatewayDisconnect {
             return;
         }
 
-        if (this.duels[roomId].host.socketId === socket.id) {
-            this.server.to(roomId).emit('leave');
+        const duel = this.duels[roomId];
 
-            delete this.duels[roomId];
+        if (duel.host.socketId === socket.id) {
+            duel.host.socketId = undefined;
         } else {
-            this.duels[roomId].guest.socketId = undefined;
+            duel.guest.socketId = undefined;
         }
     }
 
@@ -231,14 +234,14 @@ export class SocketGateway implements OnGatewayDisconnect {
         );
     }
 
-    private getDuelState(duel: IDuel): IDuelState {
+    private getDuelState(duel: IDuel, gameState = false): IDuelState {
         return {
             host: duel.host,
             guest: duel.guest,
             ai: duel.ai,
             startedAt: duel.startedAt,
             endedAt: duel.endedAt,
-            gameState: duel.game.getGameState(),
+            gameState: gameState ? duel.game.getGameState() : null,
         };
     }
 }
