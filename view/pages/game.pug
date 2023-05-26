@@ -1,4 +1,14 @@
 extends ../layout.pug
 
 block content
-    | GAME
+    h1 GAME
+    #chessboard
+
+    script(type='module').
+        import { createGame, joinGame } from '/scripts/script.js';
+
+        if (#{action === 'create'}) {
+            createGame(#{!!ai});
+        } else if (#{action === 'join'}) {
+            joinGame(#{!!host}, '#{roomId}');
+        }

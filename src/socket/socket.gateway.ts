@@ -108,7 +108,10 @@ export class SocketGateway implements OnGatewayDisconnect {
     }
 
     @SubscribeMessage('join')
-    join(@ConnectedSocket() socket: Socket, @MessageBody() body: { host: boolean, roomId: string, name: string }): IResponse {
+    join(
+        @ConnectedSocket() socket: Socket,
+        @MessageBody() body: { host: boolean; roomId: string; name: string },
+    ): IResponse {
         const { host, roomId, name } = body;
         const duel = this.duels[roomId];
 
@@ -128,8 +131,10 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        if (host && duel.host.socketId && duel.host.socketId !== socket.id ||
-            !host && duel.guest.socketId && duel.guest.socketId !== socket.id) {
+        if (
+            (host && duel.host.socketId && duel.host.socketId !== socket.id) ||
+            (!host && duel.guest.socketId && duel.guest.socketId !== socket.id)
+        ) {
             return {
                 status: 'error',
                 reason: 'SOMEONE_ALREADY_JOINED',
@@ -179,10 +184,7 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        if (
-            (host && !duel.host.turn) ||
-            (!host && !duel.guest.turn)
-        ) {
+        if ((host && !duel.host.turn) || (!host && !duel.guest.turn)) {
             return {
                 status: 'error',
                 reason: 'NOT_YOUR_TURN',

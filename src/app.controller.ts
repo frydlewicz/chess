@@ -1,10 +1,10 @@
-import { Controller, Get, Render } from '@nestjs/common';
+import { Controller, Get, Param, Render } from '@nestjs/common';
 
 import { AppService } from './app.service.js';
 
 @Controller()
 export class AppController {
-    constructor(private readonly appService: AppService) { }
+    constructor(private readonly appService: AppService) {}
 
     @Get()
     @Render('home')
@@ -19,14 +19,19 @@ export class AppController {
     createGameWithAI() {
         return {
             title: 'Game | Chess AI',
+            action: 'create',
+            ai: true,
         };
     }
 
-    @Get('game/ai/:hash')
+    @Get('game/ai/:roomId')
     @Render('game')
-    joinGameWithAi() {
+    joinGameWithAi(@Param('roomId') roomId: string) {
         return {
             title: 'Game | Chess AI',
+            action: 'join',
+            ai: true,
+            roomId,
         };
     }
 
@@ -35,22 +40,28 @@ export class AppController {
     createGame() {
         return {
             title: 'Game | Chess AI',
+            action: 'create',
         };
     }
 
-    @Get('game/host/:hash')
+    @Get('game/host/:roomId')
     @Render('game')
-    joinGameAsHost() {
+    joinGameAsHost(@Param('roomId') roomId: string) {
         return {
             title: 'Game | Chess AI',
+            action: 'join',
+            host: true,
+            roomId,
         };
     }
 
-    @Get('game/host/:hash')
+    @Get('game/guest/:roomId')
     @Render('game')
-    joinGameAsGuest() {
+    joinGameAsGuest(@Param('roomId') roomId: string) {
         return {
             title: 'Game | Chess AI',
+            action: 'join',
+            roomId,
         };
     }
 }
