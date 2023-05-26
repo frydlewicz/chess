@@ -110,9 +110,9 @@ export class SocketGateway implements OnGatewayDisconnect {
     @SubscribeMessage('join')
     join(
         @ConnectedSocket() socket: Socket,
-        @MessageBody() body: { host: boolean; roomId: string; name: string },
+        @MessageBody() body: { host: boolean; ai: boolean, roomId: string; name: string },
     ): IResponse {
-        const { host, roomId, name } = body;
+        const { host, ai, roomId, name } = body;
         const duel = this.duels[roomId];
 
         if (!duel) {
@@ -123,11 +123,19 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        if (!host && duel.ai) {
+        if (!ai && duel.ai) {
             return {
                 status: 'error',
                 reason: 'DUEL_WITH_AI',
                 display: 'Duel with AI only!',
+            };
+        }
+
+        if (ai && !duel.ai) {
+            return {
+                status: 'error',
+                reason: 'DUEL_WITH_PEOPLE',
+                display: 'Duel with people only!',
             };
         }
 
@@ -158,6 +166,7 @@ export class SocketGateway implements OnGatewayDisconnect {
 
         return {
             status: 'success',
+            state: this.getDuelState(duel, true),
         };
     }
 
@@ -243,7 +252,7 @@ export class SocketGateway implements OnGatewayDisconnect {
             ai: duel.ai,
             startedAt: duel.startedAt,
             endedAt: duel.endedAt,
-            gameState: gameState ? duel.game.getGameState() : null,
+            gameState: gameState ? duel.game.getGameState() : undefined,
         };
     }
 }

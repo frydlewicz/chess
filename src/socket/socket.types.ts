@@ -29,6 +29,7 @@ export interface IDuelState {
 export interface ICorrectResponse {
     status: 'success';
     roomId?: string;
+    state?: IDuelState;
 }
 
 export interface IErrorResponse {

@@ -2,7 +2,7 @@ extends ../layout.pug
 
 block content
     h1 GAME
-    #chessboard
+    #board
 
     script(type='module').
         import { createGame, joinGame } from '/scripts/script.js';
@@ -10,5 +10,5 @@ block content
         if (#{action === 'create'}) {
             createGame(#{!!ai});
         } else if (#{action === 'join'}) {
-            joinGame(#{!!host}, '#{roomId}');
+            joinGame(#{!!host}, #{!!ai}, '#{roomId}');
         }
