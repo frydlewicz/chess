@@ -64,4 +64,14 @@ export class AppController {
             roomId,
         };
     }
+
+    @Get('game/watch/:roomId')
+    @Render('game')
+    watchGame(@Param('roomId') roomId: string) {
+        return {
+            title: 'Game | Chess AI',
+            action: 'watch',
+            roomId,
+        };
+    }
 }

@@ -172,9 +172,38 @@ export class SocketGateway implements OnGatewayDisconnect {
         const gameState = duel.game.getGameState();
         const gameFen = duel.game.getGameFen();
 
+        socket.join(roomId);
+
         setTimeout(() => {
             this.server.to(roomId).emit('join', { duelState });
         }, 1);
+
+        return {
+            status: 'success',
+            duelState,
+            gameState,
+            gameFen,
+        };
+    }
+
+    @SubscribeMessage('watch')
+    watch(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomId: string }): IResponse {
+        const { roomId } = body;
+        const duel = this.duels[roomId];
+
+        if (!duel) {
+            return {
+                status: 'error',
+                reason: 'NOT_FOUND',
+                display: 'Duel not found!',
+            };
+        }
+
+        const duelState = this.getDuelState(duel);
+        const gameState = duel.game.getGameState();
+        const gameFen = duel.game.getGameFen();
+
+        socket.join(roomId);
 
         return {
             status: 'success',

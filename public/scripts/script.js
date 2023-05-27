@@ -1,6 +1,5 @@
 import { io } from '/scripts/socket.io.esm.min.js';
 import { Chessboard, BORDER_TYPE, COLOR } from 'https://cdn.jsdelivr.net/npm/cm-chessboard@7/src/Chessboard.min.js';
-import { FEN } from 'https://cdn.jsdelivr.net/npm/cm-chessboard@7/src/model/Position.min.js';
 
 const socket = io();
 let board;
@@ -28,7 +27,26 @@ export function joinGame(host, ai, roomId) {
     socket.emit('join', { host, ai, roomId, name }, (res) => {
         if (res?.status === 'success' && res.duelState && res.gameState && res.gameFen) {
             loadStyle().then(() => {
-                buildBoard(host, res.duelState, res.gameState, res.gameFen);
+                buildBoard(
+                    host && res.duelState.host.side === 0 || !host && res.duelState.guest.side === 0
+                        ? COLOR.white
+                        : COLOR.black,
+                    res.duelState, res.gameState, res.gameFen,
+                );
+            });
+        } else if (res?.status === 'error' && res.display) {
+            alert(res.display);
+        } else {
+            alert('Unknown error!');
+        }
+    });
+}
+
+export function watchGame(roomId) {
+    socket.emit('watch', { roomId }, (res) => {
+        if (res?.status === 'success' && res.duelState && res.gameState && res.gameFen) {
+            loadStyle().then(() => {
+                buildBoard(COLOR.white, res.duelState, res.gameState, res.gameFen);
             });
         } else if (res?.status === 'error' && res.display) {
             alert(res.display);
@@ -57,11 +75,9 @@ function loadStyle() {
     });
 }
 
-function buildBoard(host, duelState, gameState, gameFen) {
+function buildBoard(orientation, duelState, gameState, gameFen) {
     board = new Chessboard(document.getElementById('board'), {
-        orientation: host && duelState.host.side === 0 || !host && duelState.guest.side === 0
-            ? COLOR.white
-            : COLOR.black,
+        orientation,
         position: gameFen,
         assetsUrl: 'https://cdn.jsdelivr.net/npm/cm-chessboard@7/assets/',
         style: {

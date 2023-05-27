@@ -5,10 +5,12 @@ block content
     #board
 
     script(type='module').
-        import { createGame, joinGame } from '/scripts/script.js';
+        import { createGame, joinGame, watchGame } from '/scripts/script.js';
 
         if (#{action === 'create'}) {
             createGame(#{!!ai});
         } else if (#{action === 'join'}) {
             joinGame(#{!!host}, #{!!ai}, '#{roomId}');
+        } else if (#{action === 'watch'}) {
+            watchGame('#{roomId}');
         }
