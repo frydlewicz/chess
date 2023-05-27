@@ -26,9 +26,9 @@ export function joinGame(host, ai, roomId) {
     sessionStorage.setItem('name', name);
 
     socket.emit('join', { host, ai, roomId, name }, (res) => {
-        if (res?.status === 'success' && res.state) {
+        if (res?.status === 'success' && res.duelState && res.gameState && res.gameFen) {
             loadStyle().then(() => {
-                buildBoard(host, res.state);
+                buildBoard(host, res.duelState, res.gameState, res.gameFen);
             });
         } else if (res?.status === 'error' && res.display) {
             alert(res.display);
@@ -57,12 +57,12 @@ function loadStyle() {
     });
 }
 
-function buildBoard(host, state) {
+function buildBoard(host, duelState, gameState, gameFen) {
     board = new Chessboard(document.getElementById('board'), {
-        orientation: host && state.host.side === 0 || !host && state.guest.side === 0
+        orientation: host && duelState.host.side === 0 || !host && duelState.guest.side === 0
             ? COLOR.white
             : COLOR.black,
-        position: FEN.start,
+        position: gameFen,
         assetsUrl: 'https://cdn.jsdelivr.net/npm/cm-chessboard@7/assets/',
         style: {
             cssClass: 'chess-club',

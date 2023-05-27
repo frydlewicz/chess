@@ -100,7 +100,13 @@ export class SocketGateway implements OnGatewayDisconnect {
         duel.startedAt = duel.guest.socketId ? new Date() : undefined;
         duel.endedAt = undefined;
 
-        this.server.to(roomId).emit('reset', this.getDuelState(duel, true));
+        const duelState = this.getDuelState(duel);
+        const gameState = duel.game.getGameState();
+        const gameFen = duel.game.getGameFen();
+
+        setTimeout(() => {
+            this.server.to(roomId).emit('reset', { duelState, gameState, gameFen });
+        }, 1);
 
         return {
             status: 'success',
@@ -110,7 +116,7 @@ export class SocketGateway implements OnGatewayDisconnect {
     @SubscribeMessage('join')
     join(
         @ConnectedSocket() socket: Socket,
-        @MessageBody() body: { host: boolean; ai: boolean, roomId: string; name: string },
+        @MessageBody() body: { host: boolean; ai: boolean; roomId: string; name: string },
     ): IResponse {
         const { host, ai, roomId, name } = body;
         const duel = this.duels[roomId];
@@ -162,11 +168,19 @@ export class SocketGateway implements OnGatewayDisconnect {
             duel.startedAt = new Date();
         }
 
-        this.server.to(roomId).emit('join', this.getDuelState(duel));
+        const duelState = this.getDuelState(duel);
+        const gameState = duel.game.getGameState();
+        const gameFen = duel.game.getGameFen();
+
+        setTimeout(() => {
+            this.server.to(roomId).emit('join', { duelState });
+        }, 1);
 
         return {
             status: 'success',
-            state: this.getDuelState(duel, true),
+            duelState,
+            gameState,
+            gameFen,
         };
     }
 
@@ -203,16 +217,28 @@ export class SocketGateway implements OnGatewayDisconnect {
 
         const { move } = body;
 
-        duel.game.move(move);
+        try {
+            duel.game.move(move);
+        } catch (_) {
+            return {
+                status: 'error',
+                reason: 'ILLEGAL_MOVE',
+                display: 'Illegal move!',
+            };
+        }
 
         duel.host.turn = !duel.host.turn;
         duel.guest.turn = !duel.guest.turn;
 
-        if (duel.game.getGameState().isCheckMate) {
+        const gameState = duel.game.getGameState();
+
+        if (gameState.over && !duel.endedAt) {
             duel.endedAt = new Date();
         }
 
-        this.server.to(roomId).emit('move', { host, move });
+        setTimeout(() => {
+            this.server.to(roomId).emit('move', { host, move, gameState });
+        }, 1);
 
         return {
             status: 'success',
@@ -245,14 +271,13 @@ export class SocketGateway implements OnGatewayDisconnect {
         );
     }
 
-    private getDuelState(duel: IDuel, gameState = false): IDuelState {
+    private getDuelState(duel: IDuel): IDuelState {
         return {
             host: duel.host,
             guest: duel.guest,
             ai: duel.ai,
             startedAt: duel.startedAt,
             endedAt: duel.endedAt,
-            gameState: gameState ? duel.game.getGameState() : undefined,
         };
     }
 }

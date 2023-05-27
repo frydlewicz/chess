@@ -19,9 +19,11 @@ export interface ISquare {
 }
 
 export interface IGameState {
-    squares: ISquare[];
-    isCheck: boolean;
-    isCheckMate: boolean;
-    isRepetition: boolean;
-    isStalemate: boolean;
+    check: boolean;
+    checkmate: boolean;
+    draw: boolean;
+    insufficient: boolean;
+    over: boolean;
+    repetition: boolean;
+    stalemate: boolean;
 }

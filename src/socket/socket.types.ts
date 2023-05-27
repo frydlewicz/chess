@@ -23,13 +23,14 @@ export interface IDuelState {
     ai: boolean;
     startedAt: Date;
     endedAt: Date;
-    gameState?: IGameState;
 }
 
 export interface ICorrectResponse {
     status: 'success';
     roomId?: string;
-    state?: IDuelState;
+    duelState?: IDuelState;
+    gameState?: IGameState;
+    gameFen?: string;
 }
 
 export interface IErrorResponse {
