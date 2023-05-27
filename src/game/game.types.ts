@@ -18,6 +18,11 @@ export interface ISquare {
     piece?: IPiece;
 }
 
+export interface IMove {
+    from: string;
+    to: string;
+}
+
 export interface IGameState {
     check: boolean;
     checkmate: boolean;

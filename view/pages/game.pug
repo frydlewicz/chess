@@ -5,8 +5,7 @@ block content
     #board
 
     script(type='module').
-        import { createGame, joinGame, watchGame } from '/scripts/script.js';
-
+        import { createGame, joinGame, watchGame } from '/scripts/game.js';
         if (#{action === 'create'}) {
             createGame(#{!!ai});
         } else if (#{action === 'join'}) {

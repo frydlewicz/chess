@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 
-import { IGameState } from './game.types.js';
+import { IGameState, IMove } from './game.types.js';
 
 export class Game {
     private chess: Chess;
@@ -9,7 +9,7 @@ export class Game {
         this.chess = new Chess();
     }
 
-    move(notation: string): void {
+    move(notation: IMove): void {
         this.chess.move(notation);
     }
 

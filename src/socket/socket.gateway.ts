@@ -10,7 +10,7 @@ import { Server, Socket } from 'socket.io';
 
 import { genRandomString } from '../helpers/string.js';
 import { IDuel, IDuelState, IResponse } from './socket.types.js';
-import { ESide } from '../game/game.types.js';
+import { ESide, IMove } from '../game/game.types.js';
 import { Game } from '../game/game.class.js';
 
 @WebSocketGateway({
@@ -214,7 +214,7 @@ export class SocketGateway implements OnGatewayDisconnect {
     }
 
     @SubscribeMessage('move')
-    move(@ConnectedSocket() socket: Socket, @MessageBody() body: { move: string }): IResponse {
+    move(@ConnectedSocket() socket: Socket, @MessageBody() body: { move: IMove }): IResponse {
         const roomId = this.findRoomId(socket);
 
         if (!roomId) {
@@ -260,6 +260,7 @@ export class SocketGateway implements OnGatewayDisconnect {
         duel.guest.turn = !duel.guest.turn;
 
         const gameState = duel.game.getGameState();
+        const gameFen = duel.game.getGameFen();
 
         if (gameState.over && !duel.endedAt) {
             duel.endedAt = new Date();
@@ -271,6 +272,7 @@ export class SocketGateway implements OnGatewayDisconnect {
 
         return {
             status: 'success',
+            gameFen,
         };
     }
 
