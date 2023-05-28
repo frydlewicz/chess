@@ -101,11 +101,10 @@ export class SocketGateway implements OnGatewayDisconnect {
         duel.endedAt = undefined;
 
         const duelState = this.getDuelState(duel);
-        const gameState = duel.game.getGameState();
         const gameFen = duel.game.getGameFen();
 
         setTimeout(() => {
-            this.server.to(roomId).emit('reset', { duelState, gameState, gameFen });
+            this.server.to(roomId).emit('reset', { duelState, gameFen });
         }, 1);
 
         return {
@@ -259,6 +258,7 @@ export class SocketGateway implements OnGatewayDisconnect {
         duel.host.turn = !duel.host.turn;
         duel.guest.turn = !duel.guest.turn;
 
+        const duelState = this.getDuelState(duel);
         const gameState = duel.game.getGameState();
         const gameFen = duel.game.getGameFen();
 
@@ -267,7 +267,7 @@ export class SocketGateway implements OnGatewayDisconnect {
         }
 
         setTimeout(() => {
-            this.server.to(roomId).emit('move', { host, move, gameState });
+            this.server.to(roomId).emit('move', { host, move, duelState, gameState });
         }, 1);
 
         return {

@@ -3,11 +3,10 @@ import { Chessboard, BORDER_TYPE, COLOR, INPUT_EVENT_TYPE } from 'https://cdn.js
 import { Markers, MARKER_TYPE } from 'https://cdn.jsdelivr.net/npm/cm-chessboard@7/src/extensions/markers/Markers.min.js';
 
 const socket = io();
-let loadedStyle = false;
+let loadedStyles = false;
 let board;
 let host;
-let ai;
-let roomId;
+let watcher;
 let orientation;
 let gameFen;
 
@@ -23,10 +22,9 @@ export function createGame(ai) {
     });
 }
 
-export function joinGame(_host, _ai, _roomId) {
+export function joinGame(_host, ai, roomId) {
     host = _host;
-    ai = _ai;
-    roomId = _roomId;
+    watcher = false;
 
     const name = sessionStorage.getItem('name') ||
         prompt('Enter your name') ||
@@ -36,14 +34,12 @@ export function joinGame(_host, _ai, _roomId) {
 
     socket.emit('join', { host, ai, roomId, name }, (res) => {
         if (res?.status === 'success' && res.duelState && res.gameState && res.gameFen) {
+            orientation = getOrientation(res.duelState);
             gameFen = res.gameFen;
 
             loadStyles().then(() => {
-                orientation = host && res.duelState.host.side === 0 || !host && res.duelState.guest.side === 0
-                    ? COLOR.white
-                    : COLOR.black;
-
-                buildBoard(orientation);
+                buildBoard();
+                generateListeners();
 
                 if (isMyTurn(res.duelState)) {
                     board.enableMoveInput(eventHandler, orientation);
@@ -57,15 +53,17 @@ export function joinGame(_host, _ai, _roomId) {
     });
 }
 
-export function watchGame(_roomId) {
-    roomId = _roomId;
+export function watchGame(roomId) {
+    watcher = true;
 
     socket.emit('watch', { roomId }, (res) => {
         if (res?.status === 'success' && res.duelState && res.gameState && res.gameFen) {
+            orientation = COLOR.white;
             gameFen = res.gameFen;
 
             loadStyles().then(() => {
-                buildBoard(COLOR.white);
+                buildBoard();
+                generateListeners();
             });
         } else if (res?.status === 'error' && res.display) {
             alert(res.display);
@@ -76,22 +74,23 @@ export function watchGame(_roomId) {
 }
 
 function loadStyles() {
-    return Promise.all([
-        loadStyle('https://cdn.jsdelivr.net/npm/cm-chessboard@7/assets/chessboard.min.css'),
-        loadStyle('https://shaack.com/projekte/cm-chessboard/assets/extensions/markers/markers.css'),
-    ]);
-}
-
-function loadStyle(href) {
-    if (loadedStyle) {
+    if (loadedStyles) {
         return Promise.resolve();
     }
 
+    return Promise.all([
+        loadStyle('https://cdn.jsdelivr.net/npm/cm-chessboard@7/assets/chessboard.min.css'),
+        loadStyle('https://shaack.com/projekte/cm-chessboard/assets/extensions/markers/markers.css'),
+    ]).then(() => {
+        loadedStyles = true;
+    });
+}
+
+function loadStyle(href) {
     return new Promise((res) => {
         const link = document.createElement('link');
 
         link.onload = () => {
-            loadedStyle = true;
             res();
         };
         link.rel = 'stylesheet';
@@ -101,7 +100,7 @@ function loadStyle(href) {
     });
 }
 
-function buildBoard(orientation) {
+function buildBoard() {
     board = new Chessboard(document.getElementById('board'), {
         orientation,
         position: gameFen,
@@ -130,6 +129,12 @@ function isMyTurn(duelState) {
     }
 
     return false;
+}
+
+function getOrientation(duelState) {
+    return host && duelState.host.side === 0 || !host && duelState.guest.side === 0
+        ? COLOR.white
+        : COLOR.black;
 }
 
 function eventHandler(event) {
@@ -162,4 +167,35 @@ function eventHandler(event) {
 
         return true;
     }
+}
+
+function generateListeners() {
+    socket.on('reset', (res) => {
+        if (!res?.duelState || !res.gameFen) {
+            return;
+        }
+
+        orientation = getOrientation(res.duelState);
+        gameFen = res.gameFen;
+
+        buildBoard();
+
+        if (!watcher && isMyTurn(res.duelState)) {
+            board.enableMoveInput(eventHandler, orientation);
+        }
+    });
+
+    socket.on('move', (res) => {
+        if (!res?.move || !res.duelState || !res.gameState) {
+            return;
+        }
+
+        if (host !== res.host) {
+            board.movePiece(res.move.from, res.move.to, true);
+        }
+
+        if (!watcher && isMyTurn(res.duelState)) {
+            board.enableMoveInput(eventHandler, orientation);
+        }
+    });
 }
