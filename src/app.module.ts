@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 
-import { AppService } from './app.service.js';
-import { AppController } from './app.controller.js';
-import { SocketModule } from './socket/socket.module.js';
+import { AppService } from './app.service';
+import { AppController } from './app.controller';
+import { SocketModule } from './socket/socket.module';
 
 @Module({
     imports: [SocketModule],

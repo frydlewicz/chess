@@ -1,5 +1,5 @@
-import { ESide, IGameState } from '../game/game.types.js';
-import { Game } from '../game/game.class.js';
+import { ESide, IGameState } from '../game/game.types';
+import { Game } from '../game/game.class';
 
 export interface IPlayer {
     name?: string;

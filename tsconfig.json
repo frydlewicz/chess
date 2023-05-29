@@ -7,8 +7,7 @@
         "experimentalDecorators": true,
         "forceConsistentCasingInFileNames": false,
         "incremental": true,
-        "module": "NodeNext",
-        "moduleResolution": "nodenext",
+        "module": "CommonJS",
         "noFallthroughCasesInSwitch": false,
         "noImplicitAny": false,
         "outDir": "./dist",
@@ -17,6 +16,6 @@
         "sourceMap": true,
         "strictBindCallApply": false,
         "strictNullChecks": false,
-        "target": "ESNext"
+        "target": "ES2017"
     }
 }

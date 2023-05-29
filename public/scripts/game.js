@@ -149,8 +149,8 @@ function eventHandler(event) {
                 to: event.squareTo,
             },
         }, (res) => {
-            if (res?.status === 'success' && res.gameFen) {
-                return gameFen = res.gameFen;
+            if (res?.status === 'success') {
+                return;
             }
 
             board.setPosition(gameFen);
@@ -186,13 +186,15 @@ function generateListeners() {
     });
 
     socket.on('move', (res) => {
-        if (!res?.move || !res.duelState || !res.gameState) {
+        if (!res?.move || !res.duelState || !res.gameState || !res.gameFen) {
             return;
         }
 
         if (host !== res.host) {
             board.movePiece(res.move.from, res.move.to, true);
         }
+
+        gameFen = res.gameFen;
 
         if (!watcher && isMyTurn(res.duelState)) {
             board.enableMoveInput(eventHandler, orientation);

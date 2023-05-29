@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 
-import { IGameState, IMove } from './game.types.js';
+import { IGameState, IMove } from './game.types';
 
 export class Game {
     private chess: Chess;

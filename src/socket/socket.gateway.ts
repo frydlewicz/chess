@@ -8,10 +8,10 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-import { genRandomString } from '../helpers/string.js';
-import { IDuel, IDuelState, IResponse } from './socket.types.js';
-import { ESide, IMove } from '../game/game.types.js';
-import { Game } from '../game/game.class.js';
+import { genRandomString } from '../helpers/string';
+import { IDuel, IDuelState, IResponse } from './socket.types';
+import { ESide, IMove } from '../game/game.types';
+import { Game } from '../game/game.class';
 
 @WebSocketGateway({
     cors: {
@@ -267,12 +267,11 @@ export class SocketGateway implements OnGatewayDisconnect {
         }
 
         setTimeout(() => {
-            this.server.to(roomId).emit('move', { host, move, duelState, gameState });
+            this.server.to(roomId).emit('move', { host, move, duelState, gameState, gameFen });
         }, 1);
 
         return {
             status: 'success',
-            gameFen,
         };
     }
 
