@@ -111,6 +111,7 @@ function buildBoard() {
             pieces: {
                 file: 'staunty.svg',
             },
+            animationDuration: 400,
         },
         extensions: [
             {
@@ -190,7 +191,7 @@ function generateListeners() {
             return;
         }
 
-        if (host !== res.host) {
+        if (watcher || host !== res.host) {
             board.movePiece(res.move.from, res.move.to, true);
         }
 
