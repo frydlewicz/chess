@@ -1,4 +1,12 @@
 extends ../layout.pug
 
 block content
-    h1 HOME
+    header
+        .header__logo
+            .header__logo__knight
+                include ../../public/images/knight.svg
+            .header__logo__rook
+                include ../../public/images/rook.svg
+        h1 Chess AI
+    script(defer src='/scripts/particles.min.js')
+    script(defer src='/scripts/home.js')

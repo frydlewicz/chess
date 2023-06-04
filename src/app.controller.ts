@@ -2,6 +2,9 @@ import { Controller, Get, Param, Render } from '@nestjs/common';
 
 import { AppService } from './app.service';
 
+const creationYear = 2023;
+const currentYear = new Date().getFullYear();
+
 @Controller()
 export class AppController {
     constructor(private readonly appService: AppService) {}
@@ -11,6 +14,7 @@ export class AppController {
     home() {
         return {
             title: 'Chess AI',
+            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
         };
     }
 
@@ -19,6 +23,7 @@ export class AppController {
     createGameWithAI() {
         return {
             title: 'Game | Chess AI',
+            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
             action: 'create',
             ai: true,
         };
@@ -29,6 +34,7 @@ export class AppController {
     joinGameWithAi(@Param('roomId') roomId: string) {
         return {
             title: 'Game | Chess AI',
+            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
             action: 'join',
             ai: true,
             roomId,
@@ -40,6 +46,7 @@ export class AppController {
     createGame() {
         return {
             title: 'Game | Chess AI',
+            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
             action: 'create',
         };
     }
@@ -49,6 +56,7 @@ export class AppController {
     joinGameAsHost(@Param('roomId') roomId: string) {
         return {
             title: 'Game | Chess AI',
+            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
             action: 'join',
             host: true,
             roomId,
@@ -60,6 +68,7 @@ export class AppController {
     joinGameAsGuest(@Param('roomId') roomId: string) {
         return {
             title: 'Game | Chess AI',
+            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
             action: 'join',
             roomId,
         };
@@ -70,6 +79,7 @@ export class AppController {
     watchGame(@Param('roomId') roomId: string) {
         return {
             title: 'Game | Chess AI',
+            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
             action: 'watch',
             roomId,
         };
