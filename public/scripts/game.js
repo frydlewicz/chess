@@ -13,7 +13,7 @@ let gameFen;
 export function createGame(ai) {
     socket.emit('create', { ai }, (res) => {
         if (res?.status === 'success' && res.roomId) {
-            location.href = `/game/host/${res.roomId}`;
+            location.href = `/game/${ai ? 'ai' : 'host'}/${res.roomId}`;
         } else if (res?.status === 'error' && res.display) {
             alert(res.display);
         } else {

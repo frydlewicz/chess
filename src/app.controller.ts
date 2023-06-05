@@ -37,6 +37,7 @@ export class AppController {
             year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
             action: 'join',
             ai: true,
+            host: true,
             roomId,
         };
     }

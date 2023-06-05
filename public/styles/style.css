@@ -83,6 +83,12 @@ html {
 body {
     background: linear-gradient(135deg, white, #e6d3b1);
     font-family: 'Roboto', sans-serif;
+    user-select: none;
+}
+
+a {
+    color: #af6b3f;
+    text-decoration: none;
 }
 
 .particles-js-canvas-el {
@@ -123,10 +129,16 @@ footer {
     bottom: 0;
     left: 0;
     width: 100%;
+    padding: 6px 0;
+    background: linear-gradient(225deg, white, #e6d3b1);
     text-align: center;
 }
 
 @media (orientation: portrait) {
+    body {
+        font-size: 18px;
+    }
+
     header {
         flex-direction: column;
         margin: 4vw 0;
@@ -147,6 +159,10 @@ footer {
 }
 
 @media (orientation: landscape) {
+    body {
+        font-size: 20px;
+    }
+
     header {
         margin: 2vw 0;
     }
@@ -159,7 +175,6 @@ footer {
     .header__logo svg {
         height: 12vw;
     }
-
 
     header h1 {
         padding: 0 1vw;
