@@ -40,3 +40,17 @@ particlesJS('body',
         },
     },
 );
+
+(() => {
+    const joinGameButton = document.querySelector('#joinGame');
+
+    if (joinGameButton) {
+        joinGameButton.addEventListener('click', () => {
+            const roomId = prompt('Enter room ID:');
+
+            if (roomId) {
+                location.href = `/game/guest/${roomId}`;
+            }
+        });
+    }
+})();

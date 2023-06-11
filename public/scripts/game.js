@@ -1,6 +1,6 @@
 import { io } from '/scripts/socket.io.esm.min.js';
-import { Chessboard, BORDER_TYPE, COLOR, INPUT_EVENT_TYPE } from 'https://cdn.jsdelivr.net/npm/cm-chessboard@7/src/Chessboard.min.js';
-import { Markers, MARKER_TYPE } from 'https://cdn.jsdelivr.net/npm/cm-chessboard@7/src/extensions/markers/Markers.min.js';
+import { Chessboard, BORDER_TYPE, COLOR, INPUT_EVENT_TYPE } from 'https://cdn.jsdelivr.net/npm/cm-chessboard@7.7.1/src/Chessboard.min.js';
+import { Markers, MARKER_TYPE } from 'https://cdn.jsdelivr.net/npm/cm-chessboard@7.7.1/src/extensions/markers/Markers.min.js';
 
 const socket = io();
 let loadedStyles = false;
@@ -79,7 +79,7 @@ function loadStyles() {
     }
 
     return Promise.all([
-        loadStyle('https://cdn.jsdelivr.net/npm/cm-chessboard@7/assets/chessboard.min.css'),
+        loadStyle('https://cdn.jsdelivr.net/npm/cm-chessboard@7.7.1/assets/chessboard.min.css'),
         loadStyle('https://shaack.com/projekte/cm-chessboard/assets/extensions/markers/markers.css'),
     ]).then(() => {
         loadedStyles = true;
@@ -104,7 +104,7 @@ function buildBoard() {
     board = new Chessboard(document.getElementById('board'), {
         orientation,
         position: gameFen,
-        assetsUrl: 'https://cdn.jsdelivr.net/npm/cm-chessboard@7/assets/',
+        assetsUrl: 'https://cdn.jsdelivr.net/npm/cm-chessboard@7.7.1/assets/pieces/',
         style: {
             cssClass: 'chess-club',
             borderType: BORDER_TYPE.frame,
