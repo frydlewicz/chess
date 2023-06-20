@@ -1,8 +1,17 @@
 extends ../layout.pug
 
 block content
-    h1 GAME
-    #board
+    main
+        article
+            #board
+        aside
+            h2 Game with #{ai ? 'AI' : 'human'}
+            p
+                b You: #{' '}
+                span#youCaption
+                br
+                b Opponent: #{' '}
+                span#opponentCaption
 
     script(type='module').
         import { createGame, joinGame, watchGame } from '/scripts/game.js';

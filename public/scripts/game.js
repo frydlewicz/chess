@@ -44,6 +44,7 @@ export function joinGame(_host, ai, roomId) {
                 if (isMyTurn(res.duelState)) {
                     board.enableMoveInput(eventHandler, orientation);
                 }
+                setCaptions(res.duelState);
             });
         } else if (res?.status === 'error' && res.display) {
             alert(res.display);
@@ -124,6 +125,18 @@ function buildBoard() {
     });
 }
 
+function setCaptions(duelState) {
+    document.getElementById('youCaption').innerText = host
+        ? `${duelState.host.name ?? ''} (${duelState.host.side === 0 ? 'white' : 'black'})`
+        : `${duelState.guest.name ?? ''} (${duelState.guest.side === 0 ? 'white' : 'black'})`;
+
+    document.getElementById('opponentCaption').innerText = duelState.ai
+        ? `AI (${duelState.guest.side === 0 ? 'white' : 'black'})`
+        : (!host
+            ? `${duelState.host.name ?? ''} (${duelState.host.side === 0 ? 'white' : 'black'})`
+            : `${duelState.guest.name ?? ''} (${duelState.guest.side === 0 ? 'white' : 'black'})`);
+}
+
 function isMyTurn(duelState) {
     if (host && duelState.host.turn || !host && duelState.guest.turn) {
         return true;
@@ -171,6 +184,14 @@ function eventHandler(event) {
 }
 
 function generateListeners() {
+    socket.on('join', (res) => {
+        if (!res?.duelState) {
+            return;
+        }
+
+        setCaptions(res.duelState);
+    });
+
     socket.on('reset', (res) => {
         if (!res?.duelState || !res.gameFen) {
             return;

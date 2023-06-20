@@ -129,7 +129,6 @@ header h1 {
     padding: 8px 12px;
     background: white;
     border-radius: 12px;
-    font-size: 24px;
     opacity: 0.8;
     cursor: pointer;
 }
@@ -138,14 +137,29 @@ header h1 {
     opacity: 1;
 }
 
+main {
+    display: flex;
+}
+
+main aside {
+    padding: 20px;
+}
+
+h2 {
+    font-size: 36px;
+    font-weight: normal;
+}
+
 footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    padding: 6px 0;
+    height: 40px;
     background: linear-gradient(225deg, white, #e6d3b1);
-    text-align: center;
 }
 
 @media (orientation: portrait) {
@@ -155,7 +169,7 @@ footer {
 
     header {
         flex-direction: column;
-        margin: 4vw 0;
+        padding: 4vw 0;
     }
 
     .header__logo {
@@ -179,6 +193,11 @@ footer {
     .buttons .button {
         width: 300px;
         margin: 6px 0;
+        font-size: 22px;
+    }
+
+    main {
+        flex-direction: column;
     }
 }
 
@@ -188,7 +207,7 @@ footer {
     }
 
     header {
-        margin: 2vw 0;
+        padding: 2vw 0;
     }
 
     .header__logo {
@@ -211,5 +230,15 @@ footer {
 
     .buttons .button {
         margin: 0 6px;
+        font-size: 26px;
+    }
+
+    main article {
+        width: 50%;
+        max-width: calc(100vh - 40px);
+    }
+
+    main aside {
+        flex-grow: 1;
     }
 }
