@@ -258,13 +258,14 @@ export class SocketGateway implements OnGatewayDisconnect {
         duel.host.turn = !duel.host.turn;
         duel.guest.turn = !duel.guest.turn;
 
-        const duelState = this.getDuelState(duel);
         const gameState = duel.game.getGameState();
         const gameFen = duel.game.getGameFen();
 
         if (gameState.over && !duel.endedAt) {
             duel.endedAt = new Date();
         }
+
+        const duelState = this.getDuelState(duel);
 
         setTimeout(() => {
             this.server.to(roomId).emit('move', { host, move, duelState, gameState, gameFen });

@@ -21,8 +21,8 @@ export interface IDuelState {
     host: IPlayer;
     guest: IPlayer;
     ai: boolean;
-    startedAt: Date;
-    endedAt: Date;
+    startedAt: Date | undefined;
+    endedAt: Date | undefined;
 }
 
 export interface ICorrectResponse {

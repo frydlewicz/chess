@@ -1,9 +1,11 @@
 import { Controller, Get, Param, Render } from '@nestjs/common';
 
+import { IControllerPayload } from './app.types';
 import { AppService } from './app.service';
 
 const creationYear = 2023;
 const currentYear = new Date().getFullYear();
+const year = creationYear == currentYear ? currentYear.toString() : creationYear + '-' + currentYear;
 
 @Controller()
 export class AppController {
@@ -11,19 +13,19 @@ export class AppController {
 
     @Get()
     @Render('home')
-    home() {
+    home(): IControllerPayload {
         return {
             title: 'Chess AI',
-            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
+            year,
         };
     }
 
     @Get('game/ai')
     @Render('game')
-    createGameWithAI() {
+    createGameWithAI(): IControllerPayload {
         return {
             title: 'Game | Chess AI',
-            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
+            year,
             action: 'create',
             ai: true,
         };
@@ -31,10 +33,10 @@ export class AppController {
 
     @Get('game/ai/:roomId')
     @Render('game')
-    joinGameWithAi(@Param('roomId') roomId: string) {
+    joinGameWithAi(@Param('roomId') roomId: string): IControllerPayload {
         return {
             title: 'Game | Chess AI',
-            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
+            year,
             action: 'join',
             ai: true,
             host: true,
@@ -44,20 +46,20 @@ export class AppController {
 
     @Get('game/host')
     @Render('game')
-    createGame() {
+    createGame(): IControllerPayload {
         return {
             title: 'Game | Chess AI',
-            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
+            year,
             action: 'create',
         };
     }
 
     @Get('game/host/:roomId')
     @Render('game')
-    joinGameAsHost(@Param('roomId') roomId: string) {
+    joinGameAsHost(@Param('roomId') roomId: string): IControllerPayload {
         return {
             title: 'Game | Chess AI',
-            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
+            year,
             action: 'join',
             host: true,
             roomId,
@@ -66,10 +68,10 @@ export class AppController {
 
     @Get('game/guest/:roomId')
     @Render('game')
-    joinGameAsGuest(@Param('roomId') roomId: string) {
+    joinGameAsGuest(@Param('roomId') roomId: string): IControllerPayload {
         return {
             title: 'Game | Chess AI',
-            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
+            year,
             action: 'join',
             roomId,
         };
@@ -77,10 +79,10 @@ export class AppController {
 
     @Get('game/watch/:roomId')
     @Render('game')
-    watchGame(@Param('roomId') roomId: string) {
+    watchGame(@Param('roomId') roomId: string): IControllerPayload {
         return {
             title: 'Game | Chess AI',
-            year: creationYear == currentYear ? currentYear : creationYear + '-' + currentYear,
+            year,
             action: 'watch',
             roomId,
         };
