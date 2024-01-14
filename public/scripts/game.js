@@ -9,6 +9,7 @@ let host;
 let watcher;
 let orientation;
 let gameFen;
+let net;
 
 export function createGame(ai) {
     socket.emit('create', { ai }, (res) => {
@@ -37,15 +38,24 @@ export function joinGame(_host, ai, roomId) {
             orientation = getOrientation(res.duelState);
             gameFen = res.gameFen;
 
-            loadStyles().then(() => {
-                buildBoard();
-                generateListeners();
+            Promise.all([
+                generateListeners(),
+                loadStyles().then(() => {
+                    buildBoard();
 
-                if (isMyTurn(res.duelState)) {
-                    board.enableMoveInput(eventHandler, orientation);
-                }
-                setCaptions(res.duelState);
-            });
+                    if (isMyTurn(res.duelState)) {
+                        board.enableMoveInput(eventHandler, orientation);
+                    }
+                    setCaptions(res.duelState);
+                }),
+                prepareAI(ai),
+            ])
+                .then(() => {
+                    alert('Loading completed.');
+                })
+                .catch(() => {
+                    alert('Loading error!');
+                });
         } else if (res?.status === 'error' && res.display) {
             alert(res.display);
         } else {
@@ -62,10 +72,19 @@ export function watchGame(roomId) {
             orientation = COLOR.white;
             gameFen = res.gameFen;
 
-            loadStyles().then(() => {
-                buildBoard();
-                generateListeners();
-            });
+            Promise.all([
+                generateListeners(),
+                loadStyles().then(() => {
+                    buildBoard();
+                    setCaptions(res.duelState);
+                }),
+            ])
+                .then(() => {
+                    alert('Loading completed.');
+                })
+                .catch(() => {
+                    alert('Loading error!');
+                });
         } else if (res?.status === 'error' && res.display) {
             alert(res.display);
         } else {
@@ -78,7 +97,6 @@ function loadStyles() {
     if (loadedStyles) {
         return Promise.resolve();
     }
-
     return Promise.all([
         loadStyle('https://cdn.jsdelivr.net/npm/cm-chessboard@7.7.1/assets/chessboard.min.css'),
         loadStyle('https://shaack.com/projekte/cm-chessboard/assets/extensions/markers/markers.css'),
@@ -98,6 +116,19 @@ function loadStyle(href) {
         link.href = href;
 
         document.head.appendChild(link);
+    });
+}
+
+function loadScript(src) {
+    return new Promise((res) => {
+        const script = document.createElement('script');
+
+        script.onload = () => {
+            res();
+        };
+        script.src = src;
+
+        document.body.appendChild(script);
     });
 }
 
@@ -135,6 +166,21 @@ function setCaptions(duelState) {
         : (!host
             ? `${duelState.host.name ?? ''} (${duelState.host.side === 0 ? 'white' : 'black'})`
             : `${duelState.guest.name ?? ''} (${duelState.guest.side === 0 ? 'white' : 'black'})`);
+}
+
+function prepareAI(ai) {
+    if (!ai) {
+        return Promise.resolve();
+    }
+    return Promise.all([
+        loadScript('https://unpkg.com/brain.js@2.0.0-beta.23/dist/browser.js'),
+        fetch('/net.json').then((res) => res.json()),
+    ])
+        .then((array) => {
+            net = new brain.NeuralNetwork();
+
+            net.fromJSON(array[1]);
+        });
 }
 
 function isMyTurn(duelState) {
@@ -201,6 +247,7 @@ function generateListeners() {
         gameFen = res.gameFen;
 
         buildBoard();
+        setCaptions(res.duelState);
 
         if (!watcher && isMyTurn(res.duelState)) {
             board.enableMoveInput(eventHandler, orientation);
@@ -212,7 +259,7 @@ function generateListeners() {
             return;
         }
 
-        if (watcher || host !== res.host) {
+        if (watcher || host !== res.hostMove || res.aiMove) {
             board.movePiece(res.move.from, res.move.to, true);
         }
 

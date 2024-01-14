@@ -225,7 +225,9 @@ export class SocketGateway implements OnGatewayDisconnect {
         }
 
         const duel = this.duels[roomId];
-        const host = duel.host.socketId === socket.id;
+        const hostMessage = duel.host.socketId === socket.id;
+        const hostMove = duel.host.turn;
+        const aiMove = duel.guest.turn && duel.ai;
 
         if (duel.endedAt) {
             return {
@@ -235,7 +237,7 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        if ((host && !duel.host.turn) || (!host && !duel.guest.turn)) {
+        if ((hostMessage && !hostMove && !aiMove) || (!hostMessage && hostMove)) {
             return {
                 status: 'error',
                 reason: 'NOT_YOUR_TURN',
@@ -268,7 +270,7 @@ export class SocketGateway implements OnGatewayDisconnect {
         const duelState = this.getDuelState(duel);
 
         setTimeout(() => {
-            this.server.to(roomId).emit('move', { host, move, duelState, gameState, gameFen });
+            this.server.to(roomId).emit('move', { hostMove, aiMove, move, duelState, gameState, gameFen });
         }, 1);
 
         return {
