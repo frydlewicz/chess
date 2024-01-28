@@ -9,6 +9,7 @@ import {
 import { Server, Socket } from 'socket.io';
 
 import { genRandomString } from '../helpers/string';
+import { convertToArray } from '../helpers/buffer';
 import { IDuel, IDuelState, IResponse } from './socket.types';
 import { ESide, IMove } from '../game/game.types';
 import { Game } from '../game/game.class';
@@ -19,8 +20,8 @@ import { Game } from '../game/game.class';
     },
 })
 export class SocketGateway implements OnGatewayDisconnect {
-    public static readonly GarbageCollectorInterval = 1000 * 60 * 60;
-    public static readonly MaxDuelLifetime = 1000 * 60 * 60 * 12;
+    static readonly GarbageCollectorInterval = 1000 * 60 * 60;
+    static readonly MaxDuelLifetime = 1000 * 60 * 60 * 12;
     private readonly duels: { [roomId: string]: IDuel } = {};
 
     @WebSocketServer()
@@ -225,9 +226,8 @@ export class SocketGateway implements OnGatewayDisconnect {
         }
 
         const duel = this.duels[roomId];
-        const hostMessage = duel.host.socketId === socket.id;
-        const hostMove = duel.host.turn;
-        const aiMove = duel.guest.turn && duel.ai;
+        const isHostMessage = duel.host.socketId === socket.id;
+        const isHostMove = duel.host.turn;
 
         if (duel.endedAt) {
             return {
@@ -237,7 +237,7 @@ export class SocketGateway implements OnGatewayDisconnect {
             };
         }
 
-        if ((hostMessage && !hostMove && !aiMove) || (!hostMessage && hostMove)) {
+        if ((isHostMessage && !isHostMove) || (!isHostMessage && isHostMove)) {
             return {
                 status: 'error',
                 reason: 'NOT_YOUR_TURN',
@@ -270,11 +270,110 @@ export class SocketGateway implements OnGatewayDisconnect {
         const duelState = this.getDuelState(duel);
 
         setTimeout(() => {
-            this.server.to(roomId).emit('move', { hostMove, aiMove, move, duelState, gameState, gameFen });
+            let aiInput: number[];
+
+            if (duel.ai) {
+                aiInput = duel.game.getTrainInput(duelState.guest.side);
+            }
+            this.server.to(roomId).emit('move', {
+                isHostMove,
+                move,
+                duelState,
+                gameState,
+                gameFen,
+                aiInput,
+            });
         }, 1);
 
         return {
             status: 'success',
+        };
+    }
+
+    @SubscribeMessage('ai')
+    ai(@ConnectedSocket() socket: Socket, @MessageBody() body: { aiOutput: number[] }): IResponse {
+        const roomId = this.findRoomId(socket);
+
+        if (!roomId) {
+            return {
+                status: 'error',
+                reason: 'DUEL_NOT_FOUND',
+                display: 'Duel not found!',
+            };
+        }
+
+        const duel = this.duels[roomId];
+
+        if (!duel.ai) {
+            return {
+                status: 'error',
+                reason: 'DUEL_WITH_PEOPLE',
+                display: 'Duel with people only!',
+            };
+        }
+
+        if (!duel.guest.turn) {
+            return {
+                status: 'error',
+                reason: 'NOT_AI_TURN',
+                display: 'Not AI turn!',
+            };
+        }
+
+        const { aiOutput } = body;
+        const array = convertToArray(aiOutput);
+        const probArray = array.filter((_, index) => index % 2 === 0);
+        const destArray = array.filter((_, index) => index % 2 !== 0);
+
+        for (let i = 0; i < probArray.length; ++i) {
+            const fromIndex = probArray.reduce((acu, cur, index) => (cur > probArray[acu] ? index : acu), 0);
+            const from = Game.indexToSquare(fromIndex);
+
+            probArray[fromIndex] = -1;
+
+            const toIndex = Math.round(Game.BoardSize * destArray[fromIndex]);
+            const to = Game.indexToSquare(toIndex);
+
+            const move = { from, to };
+
+            try {
+                duel.game.move(move);
+            } catch (_) {
+                continue;
+            }
+
+            duel.host.turn = !duel.host.turn;
+            duel.guest.turn = !duel.guest.turn;
+
+            const gameState = duel.game.getGameState();
+            const gameFen = duel.game.getGameFen();
+
+            if (gameState.over && !duel.endedAt) {
+                duel.endedAt = new Date();
+            }
+
+            const duelState = this.getDuelState(duel);
+
+            setTimeout(() => {
+                this.server.to(roomId).emit('move', {
+                    isHostMove: false,
+                    isAiMove: true,
+                    move,
+                    duelState,
+                    gameState,
+                    gameFen,
+                });
+            }, 1);
+
+            return {
+                status: 'success',
+            };
+        }
+
+        return {
+            status: 'error',
+            reason: 'AI_PREDICT_ERROR',
+            display: 'AI could not predict the next move!',
         };
     }
 

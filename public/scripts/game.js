@@ -48,7 +48,7 @@ export function joinGame(_host, ai, roomId) {
                     }
                     setCaptions(res.duelState);
                 }),
-                prepareAI(ai),
+                prepareAi(ai),
             ])
                 .then(() => {
                     alert('Loading completed.');
@@ -168,7 +168,7 @@ function setCaptions(duelState) {
             : `${duelState.guest.name ?? ''} (${duelState.guest.side === 0 ? 'white' : 'black'})`);
 }
 
-function prepareAI(ai) {
+function prepareAi(ai) {
     if (!ai) {
         return Promise.resolve();
     }
@@ -181,6 +181,24 @@ function prepareAI(ai) {
 
             net.fromJSON(array[1]);
         });
+}
+
+function moveAi(aiInput) {
+    if (!aiInput?.length) {
+        return;
+    }
+
+    const aiOutput = net.run(aiInput);
+
+    socket.emit('ai', {
+        aiOutput,
+    }, (res) => {
+        if (res?.status === 'success') {
+            return;
+        }
+
+        alert('Unknown error!');
+    });
 }
 
 function isMyTurn(duelState) {
@@ -259,7 +277,7 @@ function generateListeners() {
             return;
         }
 
-        if (watcher || host !== res.hostMove || res.aiMove) {
+        if (watcher || host !== res.isHostMove || res.isAiMove) {
             board.movePiece(res.move.from, res.move.to, true);
         }
 
@@ -268,5 +286,7 @@ function generateListeners() {
         if (!watcher && isMyTurn(res.duelState)) {
             board.enableMoveInput(eventHandler, orientation);
         }
+
+        moveAi(res.aiInput);
     });
 }
